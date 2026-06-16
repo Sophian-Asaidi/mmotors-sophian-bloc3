@@ -1,0 +1,2 @@
+"""Application FastAPI M-Motors."""
+

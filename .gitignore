@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+node_modules/
+dist/
+coverage/
+*.log
+*.sqlite3
+*.db
+uploads/
+.env
+backend/mmotors.db
+backend/test.db

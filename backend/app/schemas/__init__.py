@@ -1,0 +1,2 @@
+"""Schémas de validation Pydantic."""
+
