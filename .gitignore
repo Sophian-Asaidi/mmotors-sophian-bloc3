@@ -1,0 +1,17 @@
+backend/venv/
+backend/.venv/
+frontend/node_modules/
+frontend/dist/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+.env
+backend/.env
+frontend/.env
+*.db
+uploads/
+backend/uploads/
+.DS_Store
+Thumbs.db
