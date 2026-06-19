@@ -27,7 +27,7 @@ Le projet contient :
 | Admin | admin.so@mmotors.fr | AdminSo2026! |
 | Client | client.so@mmotors.fr | ClientSo2026! |
 
-## Architecture générale
+## Architecture
 
 ```text
 Utilisateur
