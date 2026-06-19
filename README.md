@@ -10,14 +10,15 @@ L’application permet aux clients de rechercher un véhicule, de créer un comp
 
 Le back-office permet aux administrateurs d’ajouter des véhicules, de gérer leur mode de disponibilité et de traiter les dossiers clients.
 
-## Architecture
+# M-Motors - Solution digitale achat et location
 
-- Frontend : React + Vite
-- Backend : FastAPI + SQLAlchemy
-- Base locale : SQLite
-- Base production prévue : PostgreSQL via `DATABASE_URL`
-- Supervision : `/health`, `/metrics`, logs backend et alerte simulée
-- Conteneurisation : Docker Compose fourni en option
+Le projet contient :
+
+- un frontend React/Vite ;
+- un backend FastAPI ;
+- une base SQLite pour le local ;
+- une configuration PostgreSQL possible via Docker Compose ;
+- une supervision avec `/health`, `/metrics`, logs et alerte simulée.
 
 ## Comptes de test
 
@@ -25,6 +26,112 @@ Le back-office permet aux administrateurs d’ajouter des véhicules, de gérer 
 |---|---|---|
 | Admin | admin.so@mmotors.fr | AdminSo2026! |
 | Client | client.so@mmotors.fr | ClientSo2026! |
+
+## Architecture générale
+
+```text
+Utilisateur
+   |
+   v
+Frontend React / Vite
+   |
+   | appels HTTP avec JWT
+   v
+Backend FastAPI
+   |
+   |-- api/              routes REST
+   |-- services/         logique métier
+   |-- repositories/     accès aux données
+   |-- schemas/          validation Pydantic
+   |-- domain/           modèles SQLAlchemy
+   |-- core/             configuration, sécurité, base
+   |-- utils/            fonctions utilitaires
+   |
+   v
+Base de données
+   |-- SQLite en local
+   |-- PostgreSQL prévu via Docker Compose
+
+Supervision
+   |-- GET /health
+   |-- GET /metrics
+   |-- POST /health/alert-test
+   |-- logs backend
+```
+
+## Structure du projet
+
+```text
+mmotors_reference_complete/
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   ├── core/
+│   │   ├── domain/
+│   │   ├── repositories/
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   ├── utils/
+│   │   ├── main.py
+│   │   └── seed.py
+│   ├── tests/
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   ├── .env.example
+│   └── README.md
+├── frontend/
+│   ├── src/
+│   │   ├── api.js
+│   │   ├── main.jsx
+│   │   └── styles.css
+│   ├── package.json
+│   ├── Dockerfile
+│   ├── .env.example
+│   └── README.md
+├── monitoring/
+│   └── prometheus.yml
+├── docker-compose.yml
+├── render.yaml
+├── vercel.json
+└── README.md
+```
+
+## Fonctionnalités principales
+
+Côté client :
+
+- consulter le catalogue des véhicules ;
+- filtrer les véhicules par achat ou location ;
+- créer un compte ;
+- se connecter ;
+- déposer un dossier avec document ;
+- suivre l'état de ses dossiers.
+
+Côté administrateur :
+
+- accéder au back-office ;
+- ajouter un véhicule ;
+- passer un véhicule en vente ou en location ;
+- consulter les dossiers clients ;
+- valider ou refuser un dossier.
+
+## Sécurité
+
+- authentification JWT ;
+- mots de passe hachés avec Bcrypt ;
+- rôles `user` et `admin` ;
+- routes administrateur protégées ;
+- validation des données avec Pydantic ;
+- contrôle des fichiers uploadés ;
+- configuration par variables d'environnement ;
+- CORS paramétrable.
+
+## Monitoring et alerting
+
+- `GET /health` vérifie l'état de l'API et de la base ;
+- `GET /metrics` expose des métriques simples ;
+- `POST /health/alert-test` simule une alerte dans les logs ;
+- les logs backend indiquent les requêtes, statuts et erreurs.
 
 ## Lancer le backend en local
 
@@ -36,7 +143,7 @@ pip install -r requirements.txt
 python -m uvicorn app.main:app --reload
 ```
 
-URLs utiles :
+URLs backend :
 
 - API : http://127.0.0.1:8000
 - Swagger : http://127.0.0.1:8000/docs
@@ -52,7 +159,7 @@ npm install
 npm run dev
 ```
 
-URL : http://localhost:5173
+URL frontend : http://localhost:5173
 
 ## Tests backend
 
@@ -63,47 +170,10 @@ pytest
 pytest --cov=app
 ```
 
-## User stories couvertes
-
-Client :
-
-- consulter les véhicules ;
-- filtrer achat / location ;
-- créer un compte ;
-- se connecter ;
-- déposer un dossier avec documents ;
-- suivre l'état de ses dossiers.
-
-Administrateur :
-
-- accéder au back-office ;
-- ajouter un véhicule ;
-- basculer un véhicule en vente ou location ;
-- consulter les dossiers ;
-- valider ou refuser un dossier.
-
-## Sécurité
-
-- JWT pour l'authentification ;
-- mots de passe hachés avec Bcrypt ;
-- séparation des rôles `user` et `admin` ;
-- routes admin protégées ;
-- validation des données avec Pydantic ;
-- contrôle des fichiers uploadés ;
-- configuration par variables d'environnement ;
-- CORS paramétrable.
-
-## Monitoring et alerting
-
-- `GET /health` vérifie l'état API + base de données ;
-- `GET /metrics` expose des métriques simples au format Prometheus ;
-- `POST /health/alert-test` déclenche une alerte simulée dans les logs ;
-- logs middleware sur chaque requête : méthode, chemin, statut, durée.
-
 ## Docker Compose optionnel
 
 ```powershell
 docker compose up --build
 ```
 
-Le fichier `docker-compose.yml` inclut une architecture possible avec API, PostgreSQL, frontend, Prometheus et Grafana.
+Le fichier `docker-compose.yml` fournit une architecture possible avec frontend, backend, PostgreSQL, Prometheus et Grafana.
