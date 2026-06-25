@@ -57,9 +57,23 @@ class ApplicationRepository:
             .first()
         )
 
+    def get_document(self, document_id: int) -> Document | None:
+        return (
+            self.db.query(Document)
+            .options(joinedload(Document.application))
+            .filter(Document.id == document_id)
+            .first()
+        )
+
     def update_status(self, application: Application, status: str, admin_comment: str) -> Application:
         application.status = status
         application.admin_comment = admin_comment or ""
+        self.db.commit()
+        self.db.refresh(application)
+        return application
+    
+    def update_internal_comment(self, application: Application, internal_comment: str) -> Application:
+        application.internal_comment = internal_comment or ""
         self.db.commit()
         self.db.refresh(application)
         return application
