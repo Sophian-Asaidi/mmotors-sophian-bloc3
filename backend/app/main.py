@@ -2,12 +2,13 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import admin, applications, auth, monitoring, vehicles
-from app.core.database import Base, SessionLocal, engine
+from app.core.database import Base, SessionLocal, engine, ensure_runtime_schema
 from app.core.settings import settings
 from app.seed import seed_database
 from app.services.monitoring import logger, metrics, now
 
 Base.metadata.create_all(bind=engine)
+ensure_runtime_schema()
 with SessionLocal() as db:
     seed_database(db)
 
