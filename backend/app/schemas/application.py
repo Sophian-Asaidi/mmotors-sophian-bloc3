@@ -27,3 +27,7 @@ class ApplicationOut(BaseModel):
 
 class AdminApplicationOut(ApplicationOut):
     user: UserOut
+
+
+class ApplicationInternalCommentUpdate(BaseModel):
+    internal_comment: str = Field(default="", max_length=1000)

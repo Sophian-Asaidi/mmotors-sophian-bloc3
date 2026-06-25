@@ -51,6 +51,7 @@ class Application(Base):
     message = Column(Text, default="", nullable=False)
     status = Column(String(20), default="pending", nullable=False)
     admin_comment = Column(Text, default="", nullable=False)
+    internal_comment = Column(Text, default="", nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
