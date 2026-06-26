@@ -217,11 +217,58 @@ function CatalogPage({ user, token }) {
 
 function ClientPage({ user, token, setPage }) {
   const [items, setItems] = useState([]);
+  const [filesByApplication, setFilesByApplication] = useState({});
+  const [noticeByApplication, setNoticeByApplication] = useState({});
   const [error, setError] = useState('');
+
+  async function loadApplications() {
+    try {
+      const data = await api.myApplications(token);
+      setItems(data);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function addDocument(applicationId) {
+    const file = filesByApplication[applicationId];
+
+    if (!file) {
+      setNoticeByApplication({
+        ...noticeByApplication,
+        [applicationId]: 'Choisis un document avant d’envoyer.',
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('documents', file);
+
+    try {
+      await api.addApplicationDocuments(token, applicationId, formData);
+
+      setNoticeByApplication({
+        ...noticeByApplication,
+        [applicationId]: 'Document ajouté au dossier.',
+      });
+
+      setFilesByApplication({
+        ...filesByApplication,
+        [applicationId]: null,
+      });
+
+      await loadApplications();
+    } catch (err) {
+      setNoticeByApplication({
+        ...noticeByApplication,
+        [applicationId]: err.message,
+      });
+    }
+  }
 
   useEffect(() => {
     if (token && user?.role === 'user') {
-      api.myApplications(token).then(setItems).catch(err => setError(err.message));
+      loadApplications();
     }
   }, [token, user]);
 
@@ -248,6 +295,7 @@ function ClientPage({ user, token, setPage }) {
   return (
     <section>
       <h1>Mes dossiers</h1>
+
       {error && <p className="error">{error}</p>}
 
       <div className="stack">
@@ -257,9 +305,35 @@ function ClientPage({ user, token, setPage }) {
               <h3>{app.vehicle.brand} {app.vehicle.model}</h3>
               <Badge value={app.status} />
             </div>
+
             <p>{app.message || 'Aucun message'}</p>
+
             <small>{app.documents.length} document(s)</small>
-            {app.admin_comment && <p className="notice">Commentaire : {app.admin_comment}</p>}
+
+            {app.admin_comment && (
+              <p className="notice">Message : {app.admin_comment}</p>
+            )}
+
+            {app.status === 'pending' && (
+              <div className="document-add">
+                <input
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={e => setFilesByApplication({
+                    ...filesByApplication,
+                    [app.id]: e.target.files[0],
+                  })}
+                />
+
+                <button type="button" onClick={() => addDocument(app.id)}>
+                  Ajouter un document
+                </button>
+
+                {noticeByApplication[app.id] && (
+                  <p className="notice">{noticeByApplication[app.id]}</p>
+                )}
+              </div>
+            )}
           </article>
         ))}
       </div>
@@ -269,6 +343,7 @@ function ClientPage({ user, token, setPage }) {
 
 function AdminApplicationModal({ application, token, onClose, onDecision }) {
   const [adminComment, setAdminComment] = useState(application.admin_comment || '');
+  const [clientNotice, setClientNotice] = useState('');
   const [internalComment, setInternalComment] = useState(application.internal_comment || '');
   const [internalNotice, setInternalNotice] = useState('');
   const [error, setError] = useState('');
@@ -277,7 +352,11 @@ function AdminApplicationModal({ application, token, onClose, onDecision }) {
     setError('');
 
     try {
-      await onDecision(application.id, status, adminComment || (status === 'approved' ? 'Dossier validé' : 'Dossier refusé'));
+      await onDecision(
+        application.id,
+        status,
+        adminComment || (status === 'approved' ? 'Dossier validé' : 'Dossier refusé')
+      );
       onClose();
     } catch (err) {
       setError(err.message);
@@ -306,6 +385,18 @@ function AdminApplicationModal({ application, token, onClose, onDecision }) {
     }
   }
 
+  async function saveClientComment() {
+    setError('');
+    setClientNotice('');
+
+    try {
+      await api.updateClientComment(token, application.id, adminComment);
+      setClientNotice('Message client enregistré.');
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   return (
     <div className="modal">
       <div className="panel modal-large">
@@ -325,7 +416,9 @@ function AdminApplicationModal({ application, token, onClose, onDecision }) {
           <div>
             <h3>Véhicule</h3>
             <p>{application.vehicle.brand} {application.vehicle.model}</p>
-            <small>{application.vehicle.year} · {application.vehicle.mileage.toLocaleString('fr-FR')} km</small>
+            <small>
+              {application.vehicle.year} · {application.vehicle.mileage.toLocaleString('fr-FR')} km
+            </small>
           </div>
 
           <div>
@@ -352,21 +445,20 @@ function AdminApplicationModal({ application, token, onClose, onDecision }) {
             {application.documents.map(document => (
               <div className="line" key={document.id}>
                 <span>{document.filename}</span>
-                <button type="button" onClick={() => download(document)}>Télécharger</button>
+                <button type="button" onClick={() => download(document)}>
+                  Télécharger
+                </button>
               </div>
             ))}
           </div>
         )}
 
         <h3>Commentaire interne</h3>
-        <p className="muted">
-          Admin seulement.
-        </p>
 
         <textarea
           value={internalComment}
           onChange={e => setInternalComment(e.target.value)}
-          placeholder=""
+          placeholder="Note interne pour le service commercial"
         />
 
         <div className="row">
@@ -377,17 +469,34 @@ function AdminApplicationModal({ application, token, onClose, onDecision }) {
 
         {internalNotice && <p className="notice">{internalNotice}</p>}
 
-        <h3>Commentaire administrateur</h3>
+        <h3>Message pour le client</h3>
+
         <textarea
           value={adminComment}
           onChange={e => setAdminComment(e.target.value)}
-          placeholder="Ajouter un commentaire de décision"
+          placeholder=""
         />
 
+        <div className="row">
+          <button type="button" onClick={saveClientComment}>
+            Enregistrer le message client
+          </button>
+        </div>
+
+        {clientNotice && <p className="notice">{clientNotice}</p>}
+
         <div className="row modal-actions">
-          <button type="button" onClick={() => decide('approved')}>Valider le dossier</button>
-          <button type="button" className="danger" onClick={() => decide('rejected')}>Refuser le dossier</button>
-          <button type="button" className="ghost" onClick={onClose}>Fermer</button>
+          <button type="button" onClick={() => decide('approved')}>
+            Valider le dossier
+          </button>
+
+          <button type="button" className="danger" onClick={() => decide('rejected')}>
+            Refuser le dossier
+          </button>
+
+          <button type="button" className="ghost" onClick={onClose}>
+            Fermer
+          </button>
         </div>
       </div>
     </div>
@@ -593,6 +702,7 @@ function App() {
           if (currentUser.role === 'admin' && (page === 'catalog' || page === 'client' || page === 'login')) {
             setPage('admin');
           }
+
           if (currentUser.role !== 'admin' && page === 'monitoring') {
             setPage('catalog');
           }
@@ -603,7 +713,7 @@ function App() {
           setUser(null);
         });
     }
-  }, [token]);
+  }, [token, page]);
 
   const content = useMemo(() => {
     if (page === 'login') {
@@ -619,8 +729,14 @@ function App() {
       );
     }
 
-    if (page === 'client') return <ClientPage user={user} token={token} setPage={setPage} />;
-    if (page === 'admin') return <AdminPage user={user} token={token} />;
+    if (page === 'client') {
+      return <ClientPage user={user} token={token} setPage={setPage} />;
+    }
+
+    if (page === 'admin') {
+      return <AdminPage user={user} token={token} />;
+    }
+
     if (page === 'monitoring') {
       if (user?.role !== 'admin') {
         return (

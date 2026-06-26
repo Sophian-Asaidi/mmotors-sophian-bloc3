@@ -77,3 +77,9 @@ class ApplicationRepository:
         self.db.commit()
         self.db.refresh(application)
         return application
+    
+    def update_client_comment(self, application: Application, admin_comment: str) -> Application:
+        application.admin_comment = admin_comment or ""
+        self.db.commit()
+        self.db.refresh(application)
+        return application
