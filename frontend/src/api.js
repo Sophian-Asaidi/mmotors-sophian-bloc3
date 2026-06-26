@@ -75,6 +75,18 @@ export const api = {
 
   adminApplicationDetail: (token, id) => request(`/admin/applications/${id}`, { token }),
 
+  updateClientComment: (token, id, admin_comment) => request(`/admin/applications/${id}/client-comment`, {
+    method: 'PATCH',
+    token,
+    body: { admin_comment },
+  }),
+
+  addApplicationDocuments: (token, id, formData) => request(`/applications/${id}/documents`, {
+    method: 'POST',
+    token,
+    body: formData,
+  }),
+
   updateInternalComment: (token, id, internal_comment) => request(`/admin/applications/${id}/internal-comment`, {
     method: 'PATCH',
     token,

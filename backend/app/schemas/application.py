@@ -31,3 +31,7 @@ class AdminApplicationOut(ApplicationOut):
 
 class ApplicationInternalCommentUpdate(BaseModel):
     internal_comment: str = Field(default="", max_length=1000)
+
+
+class ApplicationClientCommentUpdate(BaseModel):
+    admin_comment: str = Field(default="", max_length=1000)

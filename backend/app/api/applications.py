@@ -25,3 +25,17 @@ def create_application(
 @router.get("/me")
 def my_applications(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return ApplicationWorkflowService(db).list_for_user(current_user)
+
+
+@router.post("/{application_id}/documents")
+def add_documents_to_application(
+    application_id: int,
+    documents: list[UploadFile] = File(default=[]),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return ApplicationWorkflowService(db).add_documents_for_user(
+        user,
+        application_id,
+        documents,
+    )

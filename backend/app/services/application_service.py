@@ -129,3 +129,43 @@ class ApplicationWorkflowService:
         updated = self.applications.update_internal_comment(application, internal_comment)
 
         return serialize_application(updated, include_user=True)
+    
+    def update_client_comment(self, application_id: int, admin_comment: str):
+        application = self.applications.get(application_id)
+
+        if not application:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dossier introuvable")
+
+        updated = self.applications.update_client_comment(application, admin_comment)
+
+        return serialize_application(updated, include_user=True)
+
+
+    def add_documents_for_user(self, user: User, application_id: int, documents: list[UploadFile]):
+        application = self.applications.get(application_id)
+
+        if not application or application.user_id != user.id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dossier introuvable")
+
+        if application.status != "pending":
+            raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Impossible d’ajouter des documents à un dossier déjà traité",
+        )
+
+        if not documents:
+            raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Aucun document envoyé",
+        )
+
+        for document in documents:
+            original_name, stored_path = store_upload(document, application.id)
+            self.applications.add_document(
+                application.id,
+                original_name,
+                document.content_type or "application/octet-stream",
+                stored_path,
+        )
+
+        return serialize_application(self.applications.get(application.id))
